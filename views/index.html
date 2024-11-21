@@ -7,15 +7,36 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <div id="login">
-    <h2>Enter Chat</h2>
-    <form id="loginForm">
+  <!-- Authentication Window -->
+  <div id="auth">
+    <h2>Welcome to Private Chat</h2>
+    <div id="auth-options">
+      <button id="createAccount">Create New Account</button>
+      <button id="loginAccount">Login</button>
+    </div>
+
+    <!-- Create Account Form -->
+    <form id="createAccountForm" style="display:none;">
+      <h3>Create New Account</h3>
+      <label for="newUsername">Username:</label>
+      <input type="text" id="newUsername" name="newUsername" required />
+      <label for="newPassword">Password:</label>
+      <input type="password" id="newPassword" name="newPassword" required />
+      <button type="submit">Create Account</button>
+    </form>
+
+    <!-- Login Form -->
+    <form id="loginForm" style="display:none;">
+      <h3>Login</h3>
       <label for="username">Username:</label>
       <input type="text" id="username" name="username" required />
-      <button type="submit">Join</button>
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required />
+      <button type="submit">Login</button>
     </form>
   </div>
 
+  <!-- Chat Window -->
   <div id="chat" style="display:none;">
     <div id="messages"></div>
     <form id="chatForm">
@@ -27,43 +48,52 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    const loginForm = document.getElementById("loginForm");
-    const chatForm = document.getElementById("chatForm");
-    const messagesDiv = document.getElementById("messages");
-    const usernameInput = document.getElementById("username");
-    const messageInput = document.getElementById("message");
+    const authDiv = document.getElementById("auth");
     const chatDiv = document.getElementById("chat");
-    const loginDiv = document.getElementById("login");
+    const authOptionsDiv = document.getElementById("auth-options");
+    const createAccountForm = document.getElementById("createAccountForm");
+    const loginForm = document.getElementById("loginForm");
 
-    let username = "";
+    // Event listeners for showing the correct form
+    document.getElementById("createAccount").addEventListener("click", () => {
+      authOptionsDiv.style.display = "none";
+      createAccountForm.style.display = "block";
+    });
 
-    // Handle login
+    document.getElementById("loginAccount").addEventListener("click", () => {
+      authOptionsDiv.style.display = "none";
+      loginForm.style.display = "block";
+    });
+
+    // Handle Create Account
+    createAccountForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const newUsername = document.getElementById("newUsername").value.trim();
+      const newPassword = document.getElementById("newPassword").value.trim();
+      socket.emit("createAccount", { username: newUsername, password: newPassword });
+    });
+
+    // Handle Login
     loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      username = usernameInput.value.trim();
-      if (username) {
-        socket.emit("login", username);
-        loginDiv.style.display = "none";
-        chatDiv.style.display = "block";
-      }
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      socket.emit("login", { username, password });
     });
 
-    // Handle sending messages
-    chatForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const message = messageInput.value.trim();
-      if (message) {
-        socket.emit("message", { username, message });
-        messageInput.value = "";
-      }
+    // Handle login success
+    socket.on("loginSuccess", () => {
+      authDiv.style.display = "none";
+      chatDiv.style.display = "block";
     });
 
-    // Display received messages
-    socket.on("message", (data) => {
-      const msgElement = document.createElement("div");
-      msgElement.textContent = `${data.username}: ${data.message}`;
-      messagesDiv.appendChild(msgElement);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight; // Auto-scroll
+    // Handle login failure
+    socket.on("loginFailure", (message) => {
+      alert(message);
+      loginForm.reset();
+      authOptionsDiv.style.display = "block";
+      createAccountForm.style.display = "none";
+      loginForm.style.display = "none";
     });
   </script>
 </body>
