@@ -9,7 +9,13 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 const CHAT_FILE = path.join(__dirname, "../data/chat.txt");
+const USERS_FILE = path.join(__dirname, "../data/users.json");
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+
+// Initialize users file if it doesn't exist
+if (!fs.existsSync(USERS_FILE)) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify({}));
+}
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "../public")));
@@ -17,10 +23,29 @@ app.use(express.static(path.join(__dirname, "../views")));
 
 // Handle socket connections
 io.on("connection", (socket) => {
-  socket.on("login", (username) => {
-    console.log(`${username} joined the chat.`);
+  // Create Account
+  socket.on("createAccount", ({ username, password }) => {
+    const users = JSON.parse(fs.readFileSync(USERS_FILE));
+    if (users[username]) {
+      socket.emit("loginFailure", "Username already exists.");
+    } else {
+      users[username] = password;
+      fs.writeFileSync(USERS_FILE, JSON.stringify(users));
+      socket.emit("loginSuccess");
+    }
   });
 
+  // Login
+  socket.on("login", ({ username, password }) => {
+    const users = JSON.parse(fs.readFileSync(USERS_FILE));
+    if (users[username] && users[username] === password) {
+      socket.emit("loginSuccess");
+    } else {
+      socket.emit("loginFailure", "Invalid username or password.");
+    }
+  });
+
+  // Handle messages
   socket.on("message", (data) => {
     const { username, message } = data;
     const timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
