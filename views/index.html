@@ -3,98 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Private Chat</title>
-  <link rel="stylesheet" href="/style.css">
+  <title>Main Page</title>
 </head>
 <body>
-  <!-- Authentication Window -->
-  <div id="auth">
-    <h2>Welcome to Private Chat</h2>
-    <div id="auth-options">
-      <button id="createAccount">Create New Account</button>
-      <button id="loginAccount">Login</button>
-    </div>
-
-    <!-- Create Account Form -->
-    <form id="createAccountForm" style="display:none;">
-      <h3>Create New Account</h3>
-      <label for="newUsername">Username:</label>
-      <input type="text" id="newUsername" name="newUsername" required />
-      <label for="newPassword">Password:</label>
-      <input type="password" id="newPassword" name="newPassword" required />
-      <button type="submit">Create Account</button>
-    </form>
-
-    <!-- Login Form -->
-    <form id="loginForm" style="display:none;">
-      <h3>Login</h3>
-      <label for="username">Username:</label>
-      <input type="text" id="username" name="username" required />
-      <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required />
-      <button type="submit">Login</button>
-    </form>
-  </div>
-
-  <!-- Chat Window -->
-  <div id="chat" style="display:none;">
-    <div id="messages"></div>
-    <form id="chatForm">
-      <input type="text" id="message" placeholder="Type a message..." required />
-      <button type="submit">Send</button>
-    </form>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-    const authDiv = document.getElementById("auth");
-    const chatDiv = document.getElementById("chat");
-    const authOptionsDiv = document.getElementById("auth-options");
-    const createAccountForm = document.getElementById("createAccountForm");
-    const loginForm = document.getElementById("loginForm");
-
-    // Event listeners for showing the correct form
-    document.getElementById("createAccount").addEventListener("click", () => {
-      authOptionsDiv.style.display = "none";
-      createAccountForm.style.display = "block";
-    });
-
-    document.getElementById("loginAccount").addEventListener("click", () => {
-      authOptionsDiv.style.display = "none";
-      loginForm.style.display = "block";
-    });
-
-    // Handle Create Account
-    createAccountForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const newUsername = document.getElementById("newUsername").value.trim();
-      const newPassword = document.getElementById("newPassword").value.trim();
-      socket.emit("createAccount", { username: newUsername, password: newPassword });
-    });
-
-    // Handle Login
-    loginForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      socket.emit("login", { username, password });
-    });
-
-    // Handle login success
-    socket.on("loginSuccess", () => {
-      authDiv.style.display = "none";
-      chatDiv.style.display = "block";
-    });
-
-    // Handle login failure
-    socket.on("loginFailure", (message) => {
-      alert(message);
-      loginForm.reset();
-      authOptionsDiv.style.display = "block";
-      createAccountForm.style.display = "none";
-      loginForm.style.display = "none";
-    });
-  </script>
+  <h1>Welcome to Private Chat</h1>
+  <button onclick="window.location.href='/login'">Login</button>
+  <button onclick="window.location.href='/createAccount'">Create New Account</button>
 </body>
 </html>
