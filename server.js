@@ -10,7 +10,6 @@ const io = socketIo(server);
 
 const USERS_FILE = path.join(__dirname, "data/users.json");
 const CHAT_FILE = path.join(__dirname, "data/chats.txt");
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
 
 // Ensure files exist
 if (!fs.existsSync(USERS_FILE)) {
@@ -97,7 +96,7 @@ app.post("/sendMessage", (req, res) => {
   });
 });
 
-// WebSocket for real-time communication
+// WebSocket for real-time communication (optional for modern browsers)
 io.on("connection", (socket) => {
   console.log("A user connected.");
 
