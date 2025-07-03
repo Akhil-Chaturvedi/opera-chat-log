@@ -1,13 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Main Page</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Simple Chat</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; background-color: #f0f2f5; margin: 0; }
+        h1 { color: #333; }
+        a { text-decoration: none; color: white; background-color: #007bff; padding: 15px 30px; margin: 10px; border-radius: 5px; font-size: 1.2em; text-align: center; display: inline-block; width: 200px; }
+        a:hover { background-color: #0056b3; }
+    </style>
 </head>
 <body>
-  <h1>Welcome to Private Chat</h1>
-  <button onclick="window.location.href='/login'">Login</button>
-  <button onclick="window.location.href='/createAccount'">Create New Account</button>
+    <h1>Simple Chat</h1>
+    <a href="/login">Login</a>
+    <a href="/createAccount">Create New Account</a>
 </body>
 </html>
