@@ -8,7 +8,6 @@
 </head>
 <body>
     <div id="chat">
-        <!-- The server will replace the placeholder text inside the <pre> tag -->
         <div id="messages"><pre>CHAT_HISTORY_PLACEHOLDER</pre></div>
 
         <form id="form" action="/message" method="POST">
@@ -32,11 +31,9 @@
 
         function scrollToBottom() { messagesContainer.scrollTop = messagesContainer.scrollHeight; }
         
-        // Scroll to the bottom as soon as the page loads
         scrollToBottom();
 
         if (typeof io === 'function') {
-            // --- MODERN BROWSER (WEBSOCKET) MODE ---
             const socket = io();
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -46,22 +43,22 @@
                 }
             });
             socket.on('chat message', function(msg) {
-                // For modern browsers, we just append the new message.
                 messagesPre.textContent += msg;
                 scrollToBottom();
             });
         } else {
-            // --- LEGACY BROWSER (LONG-POLLING) MODE ---
-            // The initial chat history is already rendered by the server.
-            // This interval just checks for new messages from others while the user is idle.
             setInterval(function() {
-                fetch('/messages').then(res => res.text()).then(data => {
-                    if (messagesPre.textContent !== data) {
-                        messagesPre.textContent = data;
-                        scrollToBottom();
-                    }
-                });
-            }, 5000); // Polls for new messages every 5 seconds
+                // --- THIS IS THE ONLY LINE THAT CHANGES ---
+                // We add a unique timestamp to the URL to "bust" the cache.
+                fetch('/messages?t=' + new Date().getTime())
+                    .then(res => res.text())
+                    .then(data => {
+                        if (messagesPre.textContent !== data) {
+                            messagesPre.textContent = data;
+                            scrollToBottom();
+                        }
+                    });
+            }, 5000);
         }
     </script>
 </body>
