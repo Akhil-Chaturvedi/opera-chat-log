@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Legacy Chat</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-        h1 { margin-bottom: 30px; }
-        a { display: inline-block; text-decoration: none; color: white; background-color: #007bff; padding: 15px 30px; margin: 10px; border-radius: 5px; font-size: 1.2em; }
-        a.create { background-color: #28a745; }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>Simple Chat</h1>
-    <a href="/login">Login</a>
-    <a href="/createAccount" class="create">Create New Account</a>
+    <div id="login">
+        <h1>Welcome to Simple Chat</h1>
+        <form>
+            <!-- These buttons navigate the user to the correct page -->
+            <button type="button" onclick="window.location.href='/login'">Login</button>
+            <button type="button" onclick="window.location.href='/createAccount'">Create New Account</button>
+        </form>
+    </div>
 </body>
 </html>
