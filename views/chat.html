@@ -8,10 +8,10 @@
 </head>
 <body>
     <div id="chat">
-        <div id="messages"><pre>Loading messages...</pre></div>
+        <!-- The server will now replace the placeholder text inside the <pre> tag -->
+        <div id="messages"><pre>CHAT_HISTORY_PLACEHOLDER</pre></div>
 
         <form id="form" action="/message" method="POST">
-            <!-- The value is now a placeholder for the server to fill in -->
             <input type="hidden" id="username-hidden" name="username" value="USERNAME_PLACEHOLDER">
             <input id="input" name="message" autocomplete="off" required placeholder="Type a message..." />
             <button type="submit">Send</button>
@@ -20,67 +20,48 @@
     
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // All existing JavaScript remains the same for modern browsers and polling.
+        // We will make one small improvement to the polling logic.
         const messagesContainer = document.getElementById('messages');
         const messagesPre = messagesContainer.querySelector('pre');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
 
-        // This client-side username logic is NO LONGER needed for the form,
-        // but we still need it for WebSocket messages.
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('username');
 
-        // If for some reason the username is missing, redirect.
-        if (!username) {
-            window.location.href = '/login';
-        }
+        if (!username) { window.location.href = '/login'; }
 
-        function scrollToBottom() {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+        function scrollToBottom() { messagesContainer.scrollTop = messagesContainer.scrollHeight; }
+        
+        // Scroll to bottom on initial load
+        scrollToBottom();
 
-        // --- DUAL-MODE LOGIC ---
         if (typeof io === 'function') {
-            // --- MODERN BROWSER (WEBSOCKET) MODE ---
             const socket = io();
-            
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 if (input.value) {
-                    // We use the username variable we got from the URL
                     socket.emit('chat message', { username: username, msg: input.value });
                     input.value = '';
                 }
             });
-
             socket.on('chat message', function(msg) {
                 messagesPre.textContent += msg;
                 scrollToBottom();
             });
-
-            fetch('/messages').then(res => res.text()).then(history => {
-                messagesPre.textContent = history;
-                scrollToBottom();
-            });
-
         } else {
-            // --- LEGACY BROWSER (LONG-POLLING) MODE ---
-            // The form will submit normally. The server has already put the
-            // username in the hidden field, so we don't need JS for that.
-            function fetchMessages() {
-                fetch('/messages')
-                    .then(response => response.text())
-                    .then(data => {
-                        if (messagesPre.textContent !== data) {
-                           messagesPre.textContent = data;
-                           scrollToBottom();
-                        }
-                    })
-                    .catch(err => console.error("Error fetching messages:", err));
-            }
-            
-            setInterval(fetchMessages, 3000);
-            fetchMessages();
+            // Long-polling for legacy browsers
+            // No initial fetch is needed since server pre-fills the chat.
+            // We just poll for updates while the user is idle on the page.
+            setInterval(function() {
+                fetch('/messages').then(res => res.text()).then(data => {
+                    if (messagesPre.textContent !== data) {
+                        messagesPre.textContent = data;
+                        scrollToBottom();
+                    }
+                });
+            }, 5000); // Poll every 5 seconds
         }
     </script>
 </body>
