@@ -4,31 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Room</title>
-    <style>
-        body { margin: 0; padding-bottom: 3rem; font-family: sans-serif; }
-        #chat-window { border: 1px solid #ccc; height: 85vh; overflow-y: scroll; padding: 10px; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; }
-        #form { background: rgba(0, 0, 0, 0.1); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; }
-        #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
-        #input:focus { outline: none; }
-        #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <pre id="chat-window">Loading messages...</pre>
+    <div id="chat">
+        <!-- The message window. Using a <pre> tag inside preserves whitespace from the chat log. -->
+        <div id="messages"><pre>Loading messages...</pre></div>
 
-    <form id="form" action="/message" method="POST">
-        <!-- Hidden input to send username with the form submission (for Opera Mini) -->
-        <input type="hidden" id="username" name="username" value="">
-        <input id="input" name="message" autocomplete="off" required /><button>Send</button>
-    </form>
+        <form id="form" action="/message" method="POST">
+            <!-- Hidden input to send username with the form submission (for Opera Mini) -->
+            <input type="hidden" id="username-hidden" name="username" value="">
+            <input id="input" name="message" autocomplete="off" required placeholder="Type a message..." />
+            <button type="submit">Send</button>
+        </form>
+    </div>
     
     <!-- This script is served automatically by our Socket.IO server -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const chatWindow = document.getElementById('chat-window');
+        // Get references to the HTML elements
+        const messagesContainer = document.getElementById('messages');
+        const messagesPre = messagesContainer.querySelector('pre');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
-        const usernameHiddenInput = document.getElementById('username');
+        const usernameHiddenInput = document.getElementById('username-hidden');
 
         // Get username from the URL and set it in the hidden form field
         const username = new URLSearchParams(window.location.search).get('username');
@@ -40,18 +39,14 @@
         }
 
         function scrollToBottom() {
-            chatWindow.scrollTop = chatWindow.scrollHeight;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
         // --- DUAL-MODE LOGIC ---
-        // This is the check: if the socket.io script loaded, 'io' will be a function.
-        // On Opera Mini, this script will likely fail or be stripped, so 'io' will be undefined.
         if (typeof io === 'function') {
             // --- MODERN BROWSER (WEBSOCKET) MODE ---
-            console.log("Modern browser detected. Using WebSockets.");
             const socket = io();
             
-            // Override the form submission
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); // Stop the page from reloading
                 if (input.value) {
@@ -60,42 +55,32 @@
                 }
             });
 
-            // Listen for new messages from the server
             socket.on('chat message', function(msg) {
-                chatWindow.textContent += msg;
+                messagesPre.textContent += msg;
                 scrollToBottom();
             });
 
-            // Load initial chat history
             fetch('/messages').then(res => res.text()).then(history => {
-                chatWindow.textContent = history;
+                messagesPre.textContent = history;
                 scrollToBottom();
             });
 
         } else {
             // --- LEGACY BROWSER (LONG-POLLING) MODE ---
-            console.log("Legacy browser detected. Using long-polling.");
-            
-            // The form will submit normally via POST to /message. No JavaScript needed for sending.
-            
             function fetchMessages() {
                 fetch('/messages')
                     .then(response => response.text())
                     .then(data => {
-                        // Replace the entire content to ensure it's always up to date
-                        if (chatWindow.textContent !== data) {
-                           chatWindow.textContent = data;
+                        if (messagesPre.textContent !== data) {
+                           messagesPre.textContent = data;
                            scrollToBottom();
                         }
                     })
                     .catch(err => console.error("Error fetching messages:", err));
             }
             
-            // Poll for new messages every 3 seconds
-            setInterval(fetchMessages, 3000);
-            
-            // Initial fetch to load history right away
-            fetchMessages();
+            setInterval(fetchMessages, 3000); // Poll every 3 seconds
+            fetchMessages(); // Initial fetch
         }
     </script>
 </body>
