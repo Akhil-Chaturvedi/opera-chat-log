@@ -4,21 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account</title>
-    <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
-        form { display: flex; flex-direction: column; width: 300px; border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
-        input { padding: 10px; margin-bottom: 10px; }
-        button { padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer; }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>Create Account</h1>
-    <form action="/createAccount" method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-        <button type="submit">Create Account</button>
-    </form>
+    <div id="login">
+        <h1>Create Account</h1>
+        <form action="/createAccount" method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required placeholder="Choose a username">
+            
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required placeholder="Choose a password">
+            
+            <button type="submit">Create Account</button>
+        </form>
+        <p style="text-align: center; margin-top: 15px;">
+            <a href="/login">Already have an account? Login here.</a>
+        </p>
+    </div>
 </body>
 </html>
