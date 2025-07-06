@@ -101,7 +101,7 @@ io.on('connection', (socket) => {
 
 
 // 6. ---- START THE SERVER ----
-server.listen(PORT, () => {
-    ensureFilesExist();
+server.listen(PORT, '0.0.0.0', () => {
+    ensureFilesExist(); // Make sure our data files are ready
     console.log(`Server is running on http://localhost:${PORT}`);
 });
