@@ -42,6 +42,8 @@ function logMessage(username, message) {
 // 4. ---- MIDDLEWARE ----
 app.use(express.urlencoded({ extended: true }));
 
+app.use(express.static('public'));
+
 // 5. ---- ROUTES ----
 app.get('/', (req, res) => { /* ... (same as before) ... */ });
 app.get('/login', (req, res) => { /* ... (same as before) ... */ });
