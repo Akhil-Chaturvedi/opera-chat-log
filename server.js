@@ -16,24 +16,22 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const CHATS_FILE = path.join(DATA_DIR, 'chats.txt');
 
 // 3. ---- HELPER FUNCTIONS ----
-// This function runs at startup to make sure our data directory and files exist.
 function ensureFilesExist() {
     if (!fs.existsSync(DATA_DIR)) {
         fs.mkdirSync(DATA_DIR);
     }
     if (!fs.existsSync(USERS_FILE)) {
-        fs.writeFileSync(USERS_FILE, JSON.stringify({})); // Create an empty user object
+        fs.writeFileSync(USERS_FILE, JSON.stringify({}));
     }
     if (!fs.existsSync(CHATS_FILE)) {
-        fs.writeFileSync(CHATS_FILE, ''); // Create an empty chat log
+        fs.writeFileSync(CHATS_FILE, '');
     }
 }
 
-// Get timestamp in the required format: [DD/MM/YYYY, HH:MM:SS]
 function getFormattedTimestamp() {
     const ts = new Date();
     const date = String(ts.getDate()).padStart(2, '0');
-    const month = String(ts.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const month = String(ts.getMonth() + 1).padStart(2, '0');
     const year = ts.getFullYear();
     const hours = String(ts.getHours()).padStart(2, '0');
     const minutes = String(ts.getMinutes()).padStart(2, '0');
@@ -41,7 +39,6 @@ function getFormattedTimestamp() {
     return `[${date}/${month}/${year}, ${hours}:${minutes}:${seconds}]`;
 }
 
-// Append a message to the chat log and return the formatted string
 function logMessage(username, message) {
     const formattedMessage = `${getFormattedTimestamp()} <${username}>: ${message}\n`;
     fs.appendFileSync(CHATS_FILE, formattedMessage);
@@ -49,8 +46,8 @@ function logMessage(username, message) {
 }
 
 // 4. ---- MIDDLEWARE ----
-app.use(express.static('public')); // Serve static files from 'public' folder
-app.use(express.urlencoded({ extended: true })); // Parse form data
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
 
 // 5. ---- ROUTES ----
 app.get('/', (req, res) => {
@@ -74,7 +71,7 @@ app.post('/createAccount', (req, res) => {
     if (users[username]) {
         return res.status(409).send('Username already exists. <a href="/createAccount">Try again</a>.');
     }
-    users[username] = password; // Note: In a real app, hash the password!
+    users[username] = password;
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
     res.redirect('/login');
 });
@@ -89,12 +86,23 @@ app.post('/login', (req, res) => {
     }
 });
 
-// Chat-related Routes
+// -- MODIFIED CHAT ROUTE --
+// This route now reads chat.html, injects the username, and sends the result.
 app.get('/chat', (req, res) => {
-    if (!req.query.username) {
+    const username = req.query.username;
+
+    if (!username) {
         return res.redirect('/login');
     }
-    res.sendFile(path.join(__dirname, 'views/chat.html'));
+
+    fs.readFile(path.join(__dirname, 'views/chat.html'), 'utf8', (err, html) => {
+        if (err) {
+            console.error("Could not read chat.html file:", err);
+            return res.status(500).send("An error occurred.");
+        }
+        const modifiedHtml = html.replace(/USERNAME_PLACEHOLDER/g, username);
+        res.send(modifiedHtml);
+    });
 });
 
 app.get('/messages', (req, res) => {
@@ -113,7 +121,6 @@ app.post('/message', (req, res) => {
 // 6. ---- WEBSOCKET LOGIC ----
 io.on('connection', (socket) => {
     console.log('A user connected via WebSocket');
-
     socket.on('chat message', (data) => {
         const { username, msg } = data;
         if (username && msg) {
@@ -121,7 +128,6 @@ io.on('connection', (socket) => {
             io.emit('chat message', loggedMessage);
         }
     });
-
     socket.on('disconnect', () => {
         console.log('A user disconnected');
     });
@@ -129,9 +135,8 @@ io.on('connection', (socket) => {
 
 // 7. ---- START THE SERVER ----
 const HOST = '0.0.0.0';
-
 server.listen(PORT, HOST, () => {
-    ensureFilesExist(); // Make sure our data files are ready
+    ensureFilesExist();
     console.log(`Server is running on PORT ${PORT} and HOST ${HOST}`);
     console.log(`It should be available at your Render URL.`);
 });
