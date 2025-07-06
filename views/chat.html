@@ -8,33 +8,30 @@
 </head>
 <body>
     <div id="chat">
-        <!-- The message window. Using a <pre> tag inside preserves whitespace from the chat log. -->
         <div id="messages"><pre>Loading messages...</pre></div>
 
         <form id="form" action="/message" method="POST">
-            <!-- Hidden input to send username with the form submission (for Opera Mini) -->
-            <input type="hidden" id="username-hidden" name="username" value="">
+            <!-- The value is now a placeholder for the server to fill in -->
+            <input type="hidden" id="username-hidden" name="username" value="USERNAME_PLACEHOLDER">
             <input id="input" name="message" autocomplete="off" required placeholder="Type a message..." />
             <button type="submit">Send</button>
         </form>
     </div>
     
-    <!-- This script is served automatically by our Socket.IO server -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Get references to the HTML elements
         const messagesContainer = document.getElementById('messages');
         const messagesPre = messagesContainer.querySelector('pre');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
-        const usernameHiddenInput = document.getElementById('username-hidden');
 
-        // Get username from the URL and set it in the hidden form field
-        const username = new URLSearchParams(window.location.search).get('username');
-        if (username) {
-            usernameHiddenInput.value = username;
-        } else {
-            // If no username is found, the user should not be here
+        // This client-side username logic is NO LONGER needed for the form,
+        // but we still need it for WebSocket messages.
+        const urlParams = new URLSearchParams(window.location.search);
+        const username = urlParams.get('username');
+
+        // If for some reason the username is missing, redirect.
+        if (!username) {
             window.location.href = '/login';
         }
 
@@ -48,10 +45,11 @@
             const socket = io();
             
             form.addEventListener('submit', function(e) {
-                e.preventDefault(); // Stop the page from reloading
+                e.preventDefault();
                 if (input.value) {
+                    // We use the username variable we got from the URL
                     socket.emit('chat message', { username: username, msg: input.value });
-                    input.value = ''; // Clear the input box
+                    input.value = '';
                 }
             });
 
@@ -67,6 +65,8 @@
 
         } else {
             // --- LEGACY BROWSER (LONG-POLLING) MODE ---
+            // The form will submit normally. The server has already put the
+            // username in the hidden field, so we don't need JS for that.
             function fetchMessages() {
                 fetch('/messages')
                     .then(response => response.text())
@@ -79,8 +79,8 @@
                     .catch(err => console.error("Error fetching messages:", err));
             }
             
-            setInterval(fetchMessages, 3000); // Poll every 3 seconds
-            fetchMessages(); // Initial fetch
+            setInterval(fetchMessages, 3000);
+            fetchMessages();
         }
     </script>
 </body>
