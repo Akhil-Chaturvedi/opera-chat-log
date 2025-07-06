@@ -8,6 +8,13 @@
 </head>
 <body>
     <div id="chat">
+        <!-- A message for users on legacy browsers -->
+        <noscript>
+            <p style="text-align: center; background: #ffc; padding: 5px;">
+                <b>Note:</b> Please refresh this page manually to see new messages from others.
+            </p>
+        </noscript>
+        
         <div id="messages"><pre>CHAT_HISTORY_PLACEHOLDER</pre></div>
 
         <form id="form" action="/message" method="POST">
@@ -19,46 +26,45 @@
     
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // This entire script will only run effectively in modern browsers.
+        // It will fail gracefully or be ignored by Opera Mini 4.4.
+
         const messagesContainer = document.getElementById('messages');
         const messagesPre = messagesContainer.querySelector('pre');
         const form = document.getElementById('form');
         const input = document.getElementById('input');
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('username');
-
-        if (!username) { window.location.href = '/login'; }
-
-        function scrollToBottom() { messagesContainer.scrollTop = messagesContainer.scrollHeight; }
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
         
+        // Scroll to the bottom as soon as the page loads.
         scrollToBottom();
 
+        // Check if WebSockets are supported.
         if (typeof io === 'function') {
+            // Hide the <noscript> message for modern users.
+            const noscriptTag = document.querySelector('noscript');
+            if (noscriptTag) { noscriptTag.style.display = 'none'; }
+            
             const socket = io();
+            
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 if (input.value) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const username = urlParams.get('username');
                     socket.emit('chat message', { username: username, msg: input.value });
                     input.value = '';
                 }
             });
+
             socket.on('chat message', function(msg) {
+                // To prevent re-rendering the whole chat history, modern browsers
+                // will only add the new message.
                 messagesPre.textContent += msg;
                 scrollToBottom();
             });
-        } else {
-            setInterval(function() {
-                // --- THIS IS THE ONLY LINE THAT CHANGES ---
-                // We add a unique timestamp to the URL to "bust" the cache.
-                fetch('/messages?t=' + new Date().getTime())
-                    .then(res => res.text())
-                    .then(data => {
-                        if (messagesPre.textContent !== data) {
-                            messagesPre.textContent = data;
-                            scrollToBottom();
-                        }
-                    });
-            }, 5000);
         }
     </script>
 </body>
