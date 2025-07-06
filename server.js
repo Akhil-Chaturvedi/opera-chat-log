@@ -101,7 +101,10 @@ io.on('connection', (socket) => {
 
 
 // 6. ---- START THE SERVER ----
-server.listen(PORT, '0.0.0.0', () => {
+const HOST = '0.0.0.0';
+
+server.listen(PORT, HOST, () => {
     ensureFilesExist(); // Make sure our data files are ready
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on PORT ${PORT} and HOST ${HOST}`);
+    console.log(`It should be available at your Render URL.`);
 });
