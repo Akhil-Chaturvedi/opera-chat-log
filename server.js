@@ -40,7 +40,7 @@ function logMessage(username, message) {
     return formattedMessage;
 }
 
-// --- HELPER FOR SERVER-SIDE RENDERING ---
+// HELPER FOR FULL SERVER-SIDE RENDERING
 function renderChatPage(username, callback) {
     fs.readFile(CHATS_FILE, 'utf8', (err, chatHistory) => {
         if (err) return callback(err);
@@ -60,32 +60,14 @@ function renderChatPage(username, callback) {
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 
-// 5. ---- AUTH ROUTES ----
+// 5. ---- AUTH & BASIC ROUTES ----
 app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'views/index.html')); });
 app.get('/login', (req, res) => { res.sendFile(path.join(__dirname, 'views/login.html')); });
 app.get('/createAccount', (req, res) => { res.sendFile(path.join(__dirname, 'views/createAccount.html')); });
+app.post('/createAccount', (req, res) => { const { username, password } = req.body; if (!username || !password) { return res.status(400).send('Username and password are required.'); } const users = JSON.parse(fs.readFileSync(USERS_FILE)); if (users[username]) { return res.status(409).send('Username already exists. <a href="/createAccount">Try again</a>.'); } users[username] = password; fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2)); res.redirect('/login'); });
+app.post('/login', (req, res) => { const { username, password } = req.body; const users = JSON.parse(fs.readFileSync(USERS_FILE)); if (users[username] && users[username] === password) { res.redirect(`/chat?username=${encodeURIComponent(username)}`); } else { res.status(401).send('Invalid username or password. <a href="/login">Try again</a>.'); } });
 
-app.post('/createAccount', (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) { return res.status(400).send('Username and password are required.'); }
-    const users = JSON.parse(fs.readFileSync(USERS_FILE));
-    if (users[username]) { return res.status(409).send('Username already exists. <a href="/createAccount">Try again</a>.'); }
-    users[username] = password;
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-    res.redirect('/login');
-});
-
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    const users = JSON.parse(fs.readFileSync(USERS_FILE));
-    if (users[username] && users[username] === password) {
-        res.redirect(`/chat?username=${encodeURIComponent(username)}`);
-    } else {
-        res.status(401).send('Invalid username or password. <a href="/login">Try again</a>.');
-    }
-});
-
-// 6. ---- CHAT ROUTES (REWRITTEN FOR SSR) ----
+// 6. ---- CHAT ROUTES ----
 app.get('/chat', (req, res) => {
     const username = req.query.username;
     if (!username) return res.redirect('/login');
@@ -97,10 +79,6 @@ app.get('/chat', (req, res) => {
         }
         res.send(html);
     });
-});
-
-app.get('/messages', (req, res) => {
-    res.sendFile(CHATS_FILE);
 });
 
 app.post('/message', (req, res) => {
@@ -117,6 +95,11 @@ app.post('/message', (req, res) => {
         }
         res.send(html);
     });
+});
+
+// This endpoint is now ONLY for modern browsers to load initial history
+app.get('/messages', (req, res) => {
+    res.sendFile(CHATS_FILE);
 });
 
 // 7. ---- WEBSOCKET LOGIC ----
