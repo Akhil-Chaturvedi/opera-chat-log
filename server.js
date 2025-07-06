@@ -16,85 +16,92 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const CHATS_FILE = path.join(DATA_DIR, 'chats.txt');
 
 // 3. ---- HELPER FUNCTIONS ----
+function ensureFilesExist() { /* ... (same as before) ... */ }
 
-// This function runs at startup to make sure our data directory and files exist.
-function ensureFilesExist() {
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR);
-    }
-    if (!fs.existsSync(USERS_FILE)) {
-        fs.writeFileSync(USERS_FILE, JSON.stringify({})); // Create an empty user object
-    }
-    if (!fs.existsSync(CHATS_FILE)) {
-        fs.writeFileSync(CHATS_FILE, ''); // Create an empty chat log
-    }
+// ---- NEW: Timestamp and Logging Functions ----
+// Get timestamp in the required format: [DD/MM/YYYY, HH:MM:SS]
+function getFormattedTimestamp() {
+    const ts = new Date();
+    const date = String(ts.getDate()).padStart(2, '0');
+    const month = String(ts.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+    const year = ts.getFullYear();
+    const hours = String(ts.getHours()).padStart(2, '0');
+    const minutes = String(ts.getMinutes()).padStart(2, '0');
+    const seconds = String(ts.getSeconds()).padStart(2, '0');
+    return `[${date}/${month}/${year}, ${hours}:${minutes}:${seconds}]`;
 }
 
-// 4. ---- MIDDLEWARE ----
+// Append a message to the chat log and return the formatted string
+function logMessage(username, message) {
+    const formattedMessage = `${getFormattedTimestamp()} <${username}>: ${message}\n`;
+    fs.appendFileSync(CHATS_FILE, formattedMessage);
+    return formattedMessage;
+}
+// ---- END NEW ----
 
-// This allows Express to read data from HTML forms
+// 4. ---- MIDDLEWARE ----
 app.use(express.urlencoded({ extended: true }));
 
 // 5. ---- ROUTES ----
+app.get('/', (req, res) => { /* ... (same as before) ... */ });
+app.get('/login', (req, res) => { /* ... (same as before) ... */ });
+app.get('/createAccount', (req, res) => { /* ... (same as before) ... */ });
+app.post('/createAccount', (req, res) => { /* ... (same as before) ... */ });
+app.post('/login', (req, res) => { /* ... (same as before) ... */ });
 
-// Home page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/index.html'));
+// ---- NEW: Chat-related Routes ----
+// Serve the main chat page
+app.get('/chat', (req, res) => {
+    // A user must have a username to access the chat
+    if (!req.query.username) {
+        return res.redirect('/login');
+    }
+    res.sendFile(path.join(__dirname, 'views/chat.html'));
 });
 
-// Serve the login page
-app.get('/login', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/login.html'));
+// For Opera Mini (and other non-JS clients) to GET all messages
+app.get('/messages', (req, res) => {
+    res.sendFile(CHATS_FILE);
 });
 
-// Serve the create account page
-app.get('/createAccount', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views/createAccount.html'));
-});
+// For Opera Mini (and other non-JS clients) to POST a new message
+app.post('/message', (req, res) => {
+    const { username, message } = req.body;
 
-// Handle the "Create Account" form submission
-app.post('/createAccount', (req, res) => {
-    const { username, password } = req.body;
+    if (username && message) {
+        const loggedMessage = logMessage(username, message);
+        // Broadcast to modern clients so they see the message from the legacy user
+        io.emit('chat message', loggedMessage);
+    }
     
-    // Basic validation
-    if (!username || !password) {
-        return res.status(400).send('Username and password are required.');
-    }
-
-    const users = JSON.parse(fs.readFileSync(USERS_FILE));
-
-    if (users[username]) {
-        // User already exists
-        return res.status(409).send('Username already exists. <a href="/createAccount">Try again</a>.');
-    }
-
-    // Add new user (in a real app, you would hash the password!)
-    users[username] = password;
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-
-    // Redirect to the login page after successful creation
-    res.redirect('/login');
+    // Redirect back to the chat page to "refresh" it for the Opera Mini user
+    res.redirect(`/chat?username=${encodeURIComponent(username)}`);
 });
+// ---- END NEW ----
 
-// Handle the "Login" form submission
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    const users = JSON.parse(fs.readFileSync(USERS_FILE));
+// ---- NEW: WebSocket Logic ----
+io.on('connection', (socket) => {
+    console.log('A user connected via WebSocket');
 
-    // Check if user exists and password is correct
-    if (users[username] && users[username] === password) {
-        // Success! Redirect to the chat page.
-        // We pass the username in the URL so the chat page knows who is logged in.
-        res.redirect(`/chat?username=${encodeURIComponent(username)}`);
-    } else {
-        // Failure
-        res.status(401).send('Invalid username or password. <a href="/login">Try again</a>.');
-    }
+    // When a modern browser sends a message
+    socket.on('chat message', (data) => {
+        const { username, msg } = data;
+        if (username && msg) {
+            const loggedMessage = logMessage(username, msg);
+            // Broadcast the message to ALL connected clients (including the sender)
+            io.emit('chat message', loggedMessage);
+        }
+    });
+
+    socket.on('disconnect', () => {
+        console.log('A user disconnected');
+    });
 });
+// ---- END NEW ----
 
 
 // 6. ---- START THE SERVER ----
 server.listen(PORT, () => {
-    ensureFilesExist(); // Make sure our data files are ready
+    ensureFilesExist();
     console.log(`Server is running on http://localhost:${PORT}`);
 });
